@@ -6,7 +6,7 @@ export type Drafts = { note: string; todo: string }
 
 declare module 'claude-code' {
   interface PluginState {
-    'appunti-progetto': {
+    'notes': {
       board: Shaped<Board>
       project: string
       removed: Removed | null

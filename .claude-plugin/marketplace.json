@@ -1,5 +1,5 @@
 {
   "name": "mod-notes",
   "owner": { "name": "fc79" },
-  "plugins": [{ "name": "appunti-progetto", "source": "./" }]
+  "plugins": [{ "name": "notes", "source": "./" }]
 }

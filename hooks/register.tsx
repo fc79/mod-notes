@@ -9,12 +9,12 @@ const EMPTY: Board = { notes: [], todos: [] }
 
 // Cambia l'etichetta se cambiano i campi: un valore salvato da una versione
 // precedente viene letto come vuoto invece che con la forma sbagliata.
-const board = atom({ plugin: 'appunti-progetto', key: 'board' } as const, EMPTY, {
+const board = atom({ plugin: 'notes', key: 'board' } as const, EMPTY, {
   shape: 'board-1',
 })
-const project = atom({ plugin: 'appunti-progetto', key: 'project' } as const, '')
-const removed = atom({ plugin: 'appunti-progetto', key: 'removed' } as const, null)
-const drafts = atom({ plugin: 'appunti-progetto', key: 'drafts' } as const, {
+const project = atom({ plugin: 'notes', key: 'project' } as const, '')
+const removed = atom({ plugin: 'notes', key: 'removed' } as const, null)
+const drafts = atom({ plugin: 'notes', key: 'drafts' } as const, {
   note: '',
   todo: '',
 } as Drafts)

@@ -1,4 +1,4 @@
-# appunti-progetto
+# notes
 
 Una mod per Claude Code che aggiunge un pannello laterale con gli **appunti** e la **lista to do** del progetto su cui stai lavorando. Appunti e lista sono salvati per ogni cartella di progetto, sul tuo computer, e si ricaricano quando riapri una sessione nella stessa cartella.
 
@@ -15,13 +15,13 @@ Una mod per Claude Code che aggiunge un pannello laterale con gli **appunti** e 
 Al prompt di una sessione nel terminale:
 
 ```
-/plugin install appunti-progetto --marketplace fc79/mod-notes
+/plugin install notes --marketplace fc79/mod-notes
 ```
 
 Da una shell:
 
 ```
-claude plugin install appunti-progetto --marketplace fc79/mod-notes
+claude plugin install notes --marketplace fc79/mod-notes
 ```
 
 Poi rispondi `y` per aggiungere il marketplace e scegli l'ambito (utente).

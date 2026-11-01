@@ -8,7 +8,7 @@ const FROM_PHONE = {
 } as const
 
 const PANE = {
-  plugin: 'appunti-progetto',
+  plugin: 'notes',
   component: 'Pane',
   requestId: 'appunti',
   props: {
