@@ -251,7 +251,7 @@ export const register: Register = on => {
 
         <Box flexDirection="column">
           <Text bold>Appunti ({notes.length})</Text>
-          {field('nuova-nota', 'Scrivi un appunto e premi Invio', 2)}
+          {field('nuova-nota', 'Nuovo appunto', 2)}
           {notes.length === 0 ? <Text dimColor>Nessun appunto.</Text> : null}
           {notes.map(n => (
             <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
@@ -274,7 +274,7 @@ export const register: Register = on => {
           <Text bold>
             To do ({open.length} da fare{done.length ? `, ${done.length} fatte` : ''})
           </Text>
-          {field('nuovo-todo', 'Nuova cosa da fare, poi Invio', 1)}
+          {field('nuovo-todo', 'Nuova cosa da fare', 1)}
           {b.todos.length === 0 ? <Text dimColor>Nessuna voce.</Text> : null}
           {[...open, ...done].map(t => (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
