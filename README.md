@@ -5,7 +5,7 @@ Una mod per Claude Code che aggiunge un pannello laterale con gli **appunti** e 
 ## Cosa fa
 
 - **Appunti**: scrivi nel campo e premi Invio o **aggiungi**; ogni appunto ha data e ora, i più recenti in alto.
-- **To do**: aggiungi una voce con Invio o **aggiungi**, la spunti con un clic, le voci fatte vanno in fondo; "Togli le fatte" le rimuove tutte insieme.
+- **To do**: aggiungi una voce con Invio o **aggiungi**, la spunti con un clic, le voci fatte vanno in fondo; "Elimina completati" le rimuove tutte insieme.
 - **✕** elimina una voce; **Annulla** recupera l'ultima eliminazione.
 - Comandi: `/notes` apre il pannello, `/nota testo` aggiunge un appunto, `/todo testo` aggiunge una voce. Sull'app mobile, che non ha campi di testo, si usano i comandi.
 - Dove il pannello non può essere mostrato, `/notes` riporta appunti e to do come testo nella conversazione.

@@ -221,7 +221,7 @@ export const register: Register = on => {
       const { Input } = $.ui.resolve(e)
       const isNote = key === 'nuova-nota'
       return (
-        <Box width="100%">
+        <Box width="100%" marginBottom={1}>
         <Input
           key={key}
           placeholder={placeholder}
@@ -315,7 +315,7 @@ export const register: Register = on => {
           {done.length > 0 ? (
             <Button
               key="togli-fatte"
-              label={`Togli le fatte (${done.length})`}
+              label={`Elimina completati (${done.length})`}
               onPress={() => remove($, { notes: [], todos: done })}
             />
           ) : null}
