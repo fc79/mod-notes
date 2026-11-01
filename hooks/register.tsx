@@ -142,31 +142,37 @@ export const register: Register = on => {
 
     try {
       await $.command.register({
-        name: 'appunti',
+        name: 'notes',
         description: 'Apre il pannello con appunti e to do del progetto',
       })
-    } catch {}
+    } catch (err) {
+      $.ui.log(`notes: comando non registrato (${String(err)})`)
+    }
     try {
       await $.command.register({
         name: 'nota',
         description: 'Aggiunge un appunto al progetto',
         argumentHint: '[testo]',
       })
-    } catch {}
+    } catch (err) {
+      $.ui.log(`notes: comando non registrato (${String(err)})`)
+    }
     try {
       await $.command.register({
         name: 'todo',
         description: 'Aggiunge una voce alla lista to do del progetto',
         argumentHint: '[testo]',
       })
-    } catch {}
+    } catch (err) {
+      $.ui.log(`notes: comando non registrato (${String(err)})`)
+    }
 
     void openPane($, false)
 
     return next(e)
   })
 
-  on('command.run', { command: 'appunti' }, async $ => {
+  on('command.run', { command: 'notes' }, async $ => {
     const opened = await openPane($, true)
     if (opened.isPlaced) return { text: 'Pannello appunti aperto.' }
 

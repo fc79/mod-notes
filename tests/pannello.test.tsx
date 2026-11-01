@@ -116,7 +116,7 @@ test('un salvataggio rovinato non blocca il pannello', async ($, on) => {
   await ui.unmount()
 })
 
-test('dove il pannello non si vede, /appunti mostra il motivo e il contenuto in chat', async ($, on) => {
+test('dove il pannello non si vede, /notes mostra il motivo e il contenuto in chat', async ($, on) => {
   engine(
     on,
     {
@@ -129,7 +129,7 @@ test('dove il pannello non si vede, /appunti mostra il motivo e il contenuto in 
   )
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
 
-  const out = await $.command.run({ command: 'appunti', args: '', ...FROM_PHONE })
+  const out = await $.command.run({ command: 'notes', args: '', ...FROM_PHONE })
   expect(out.text).toContain('the attached surfaces place no panes')
   expect(out.text).toContain('Vela nuova: ordinata')
   expect(out.text).toContain('☑ Comprare la sonda')

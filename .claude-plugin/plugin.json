@@ -1,6 +1,6 @@
 {
   "name": "notes",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Pannello laterale con appunti e lista to do, salvati per ogni progetto",
   "types": "./types/index.d.ts"
 }
