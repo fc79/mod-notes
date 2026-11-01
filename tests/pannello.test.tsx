@@ -43,7 +43,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
 
     await ui.input({ key: 'nuova-nota', text: 'Il PID oscilla con onda al traverso' })
     expect(await ui.find({ type: 'Text', text: /oscilla/ })).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /^Appunti \(/ }))?.text).toBe('Appunti (1)')
+    expect((await ui.find({ type: 'Text', text: /^Appunti ·/ }))?.text).toBe('Appunti · 1')
 
     await ui.input({ key: 'nuovo-todo', text: 'Tarare il guadagno' })
     const row = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
@@ -52,7 +52,8 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await ui.press({ key: row?.key ?? '' })
     const ticked = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
     expect(ticked?.text).toContain('☑')
-    expect(await ui.find({ key: 'togli-fatte' })).toBeDefined()
+    expect(await ui.find({ key: 'elimina-completati' })).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 0 da fare')
 
     const del = (await ui.findAll({ type: 'Button' })).find(b => b.key?.startsWith('del-n-'))
     await ui.press({ key: del?.key ?? '' })
@@ -62,7 +63,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ type: 'Text', text: /oscilla/ })).toBeDefined()
     expect(await ui.find({ key: 'annulla' })).toBeUndefined()
 
-    await ui.press({ key: 'togli-fatte' })
+    await ui.press({ key: 'elimina-completati' })
     expect((await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))).toBeUndefined()
 
     await ui.unmount()
@@ -82,7 +83,7 @@ test('quello salvato riappare in una nuova sessione, su ogni superficie', async 
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /Vela nuova/ })).toBeDefined()
     expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(true)
-    expect((await ui.find({ type: 'Text', text: /^Progetto/ }))?.text).toBe('Progetto: autopilota')
+    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 1 da fare')
     await ui.unmount()
   }
 })
@@ -146,5 +147,29 @@ test('i due campi hanno la stessa altezza e dicono di premere Invio', async ($, 
   expect(todo?.props.rows).toBe(nota?.props.rows)
   expect(nota?.props.placeholder).toBe('Nuovo appunto, premi Invio')
   expect(todo?.props.placeholder).toBe('Nuova cosa da fare, premi Invio')
+  await ui.unmount()
+})
+
+test('ogni sezione è un riquadro, to do sopra, campo sotto la lista', async ($, on) => {
+  engine(on, {
+    [`board:${ROOT}`]: { notes: [], todos: [{ id: 'b', text: 'Comprare la sonda', done: false, at: 2 }] },
+  })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const titles = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+  expect(titles.findIndex(t => t.startsWith('To do'))).toBeLessThan(
+    titles.findIndex(t => t.startsWith('Appunti')),
+  )
+  const boxes = (await ui.findAll({ type: 'Box' })).filter(x => x.props.borderStyle === 'round')
+  expect(boxes.length).toBe(2)
+  expect(await ui.find({ type: 'Text', text: /^Progetto/ })).toBeUndefined()
+
+  // Annulla compare nella sezione da cui si è eliminato.
+  const del = (await ui.findAll({ type: 'Button' })).find(x => x.key?.startsWith('del-t-'))
+  await ui.press({ key: del?.key ?? '' })
+  expect(await ui.find({ key: 'annulla' })).toBeDefined()
+  await ui.press({ key: 'annulla' })
+  expect((await ui.findAll({ type: 'Button' })).some(x => /sonda/.test(x.text))).toBe(true)
   await ui.unmount()
 })

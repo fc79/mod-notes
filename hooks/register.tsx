@@ -122,7 +122,7 @@ async function undo($: EngineInterface) {
 
 async function openPane($: EngineInterface, focus: boolean) {
   const root = await read($, project)
-  const title = root ? `Appunti · ${folderName(root)}` : 'Appunti'
+  const title = root ? `Notes · ${folderName(root)}` : 'Notes'
   return $.ui.open(focus ? { id: PANE, title, focus: true } : { id: PANE, title })
 }
 
@@ -206,13 +206,23 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const b = await read($, board)
-    const root = await read($, project)
     const last = await read($, removed)
     const draft = await read($, drafts)
 
     const notes = [...b.notes].sort((x, y) => y.at - x.at)
     const open = b.todos.filter(t => !t.done).sort((x, y) => x.at - y.at)
     const done = b.todos.filter(t => t.done).sort((x, y) => x.at - y.at)
+
+    // "Annulla" compare nella riga del titolo della sezione da cui è stato
+    // eliminato qualcosa: così niente spinge giù il resto del pannello.
+    const undoIn: 'todo' | 'note' | null = !last
+      ? null
+      : last.todos.length > 0
+        ? 'todo'
+        : last.notes.length > 0
+          ? 'note'
+          : null
+    const undoButton = <Button key="annulla" label="Annulla" onPress={() => undo($)} />
 
     // Il campo di testo esiste dove la superficie lo disegna (non su mobile).
     // I due campi hanno la stessa altezza e occupano tutta la larghezza.
@@ -221,72 +231,52 @@ export const register: Register = on => {
       const { Input } = $.ui.resolve(e)
       const isNote = key === 'nuova-nota'
       return (
-        <Box width="100%" marginBottom={1}>
-        <Input
-          key={key}
-          placeholder={placeholder}
-          rows={FIELD_ROWS}
-          value={isNote ? draft.note : draft.todo}
-          submitLabel="aggiungi"
-          onInput={value =>
-            void update($, drafts, d => (isNote ? { ...d, note: value } : { ...d, todo: value }))
-          }
-          onSubmit={async value => {
-            const added = isNote ? await addNote($, value) : await addTodo($, value)
-            if (added) {
-              await update($, drafts, d => (isNote ? { ...d, note: '' } : { ...d, todo: '' }))
+        <Box width="100%" marginTop={1}>
+          <Input
+            key={key}
+            placeholder={placeholder}
+            rows={FIELD_ROWS}
+            value={isNote ? draft.note : draft.todo}
+            submitLabel="aggiungi"
+            onInput={value =>
+              void update($, drafts, d => (isNote ? { ...d, note: value } : { ...d, todo: value }))
             }
-          }}
-        />
+            onSubmit={async value => {
+              const added = isNote ? await addNote($, value) : await addTodo($, value)
+              if (added) {
+                await update($, drafts, d => (isNote ? { ...d, note: '' } : { ...d, todo: '' }))
+              }
+            }}
+          />
         </Box>
       )
     }
 
-    const undoLabel = last
-      ? last.notes.length + last.todos.length === 1
-        ? 'Eliminato 1 elemento'
-        : `Eliminati ${last.notes.length + last.todos.length} elementi`
-      : ''
-
-    return (
-      <Box flexDirection="column" gap={1}>
-        {root ? <Text dimColor>Progetto: {folderName(root)}</Text> : null}
-
-        {last ? (
-          <Box flexDirection="row" justifyContent="space-between" gap={1}>
-            <Text dimColor>{undoLabel}</Text>
-            <Button key="annulla" label="Annulla" onPress={() => undo($)} />
+    // Ogni sezione è un riquadro: titolo con i comandi a destra, lista, campo.
+    const section = (
+      title: string,
+      actions: (JSX.Element | null)[],
+      body: (JSX.Element | null)[],
+      input: JSX.Element | null,
+    ) => (
+      <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1} gap={1}>
+        <Box flexDirection="row" justifyContent="space-between" gap={1}>
+          <Text bold>{title}</Text>
+          <Box flexDirection="row" gap={2}>
+            {actions}
           </Box>
-        ) : null}
-
-        <Box flexDirection="column">
-          <Text bold>Appunti ({notes.length})</Text>
-          {field('nuova-nota', 'Nuovo appunto, premi Invio')}
-          {notes.length === 0 ? <Text dimColor>Nessun appunto.</Text> : null}
-          {notes.map(n => (
-            <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
-              <Box flexDirection="column" flexShrink={1}>
-                <Text dimColor>{when(n.at)}</Text>
-                <Text wrap="wrap">{n.text}</Text>
-              </Box>
-              <Button
-                key={`del-n-${n.id}`}
-                plain
-                dimColor
-                label="✕"
-                onPress={() => remove($, { notes: [n], todos: [] })}
-              />
-            </Box>
-          ))}
         </Box>
+        <Box flexDirection="column" gap={1}>
+          {body}
+        </Box>
+        {input}
+      </Box>
+    )
 
-        <Box flexDirection="column">
-          <Text bold>
-            To do ({open.length} da fare{done.length ? `, ${done.length} fatte` : ''})
-          </Text>
-          {field('nuovo-todo', 'Nuova cosa da fare, premi Invio')}
-          {b.todos.length === 0 ? <Text dimColor>Nessuna voce.</Text> : null}
-          {[...open, ...done].map(t => (
+    const todoRows =
+      b.todos.length === 0
+        ? [<Text key="vuoto-t" dimColor>Nessuna voce.</Text>]
+        : [...open, ...done].map(t => (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
               <Button
                 key={`spunta-${t.id}`}
@@ -311,15 +301,52 @@ export const register: Register = on => {
                 onPress={() => remove($, { notes: [], todos: [t] })}
               />
             </Box>
-          ))}
-          {done.length > 0 ? (
-            <Button
-              key="togli-fatte"
-              label={`Elimina completati (${done.length})`}
-              onPress={() => remove($, { notes: [], todos: done })}
-            />
-          ) : null}
-        </Box>
+          ))
+
+    const noteRows =
+      notes.length === 0
+        ? [<Text key="vuoto-n" dimColor>Nessun appunto.</Text>]
+        : notes.map(n => (
+            <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
+              <Box flexDirection="column" flexShrink={1}>
+                <Text dimColor>{when(n.at)}</Text>
+                <Text wrap="wrap">{n.text}</Text>
+              </Box>
+              <Button
+                key={`del-n-${n.id}`}
+                plain
+                dimColor
+                label="✕"
+                onPress={() => remove($, { notes: [n], todos: [] })}
+              />
+            </Box>
+          ))
+
+    return (
+      <Box flexDirection="column" gap={1}>
+        {section(
+          `To do · ${open.length} da fare`,
+          [
+            undoIn === 'todo' ? undoButton : null,
+            done.length > 0 ? (
+              <Button
+                key="elimina-completati"
+                plain
+                label="Elimina completati"
+                onPress={() => remove($, { notes: [], todos: done })}
+              />
+            ) : null,
+          ],
+          todoRows,
+          field('nuovo-todo', 'Nuova cosa da fare, premi Invio'),
+        )}
+
+        {section(
+          `Appunti · ${notes.length}`,
+          [undoIn === 'note' ? undoButton : null],
+          noteRows,
+          field('nuova-nota', 'Nuovo appunto, premi Invio'),
+        )}
 
         {e.surface === 'mobile' ? (
           <Text dimColor>Dal telefono aggiungi con /nota testo e /todo testo.</Text>
