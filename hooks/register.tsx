@@ -4,6 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Board, Drafts, Note, Removed, Todo } from '../types'
 
 const PANE = 'appunti'
+const FIELD_ROWS = 3
 const EMPTY: Board = { notes: [], todos: [] }
 
 // Cambia l'etichetta se cambiano i campi: un valore salvato da una versione
@@ -208,15 +209,17 @@ export const register: Register = on => {
     const done = b.todos.filter(t => t.done).sort((x, y) => x.at - y.at)
 
     // Il campo di testo esiste dove la superficie lo disegna (non su mobile).
-    const field = (key: 'nuova-nota' | 'nuovo-todo', placeholder: string, rows: number) => {
+    // I due campi hanno la stessa altezza e occupano tutta la larghezza.
+    const field = (key: 'nuova-nota' | 'nuovo-todo', placeholder: string) => {
       if (e.surface === 'mobile') return null
       const { Input } = $.ui.resolve(e)
       const isNote = key === 'nuova-nota'
       return (
+        <Box width="100%">
         <Input
           key={key}
           placeholder={placeholder}
-          rows={rows}
+          rows={FIELD_ROWS}
           value={isNote ? draft.note : draft.todo}
           submitLabel="aggiungi"
           onInput={value =>
@@ -229,6 +232,7 @@ export const register: Register = on => {
             }
           }}
         />
+        </Box>
       )
     }
 
@@ -251,7 +255,7 @@ export const register: Register = on => {
 
         <Box flexDirection="column">
           <Text bold>Appunti ({notes.length})</Text>
-          {field('nuova-nota', 'Nuovo appunto', 2)}
+          {field('nuova-nota', 'Nuovo appunto, premi Invio')}
           {notes.length === 0 ? <Text dimColor>Nessun appunto.</Text> : null}
           {notes.map(n => (
             <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
@@ -274,7 +278,7 @@ export const register: Register = on => {
           <Text bold>
             To do ({open.length} da fare{done.length ? `, ${done.length} fatte` : ''})
           </Text>
-          {field('nuovo-todo', 'Nuova cosa da fare', 1)}
+          {field('nuovo-todo', 'Nuova cosa da fare, premi Invio')}
           {b.todos.length === 0 ? <Text dimColor>Nessuna voce.</Text> : null}
           {[...open, ...done].map(t => (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>

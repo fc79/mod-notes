@@ -134,3 +134,17 @@ test('dove il pannello non si vede, /appunti mostra il motivo e il contenuto in 
   expect(out.text).toContain('Vela nuova: ordinata')
   expect(out.text).toContain('☑ Comprare la sonda')
 })
+
+test('i due campi hanno la stessa altezza e dicono di premere Invio', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const nota = await ui.find({ key: 'nuova-nota' })
+  const todo = await ui.find({ key: 'nuovo-todo' })
+  expect(nota?.props.rows).toBe(3)
+  expect(todo?.props.rows).toBe(nota?.props.rows)
+  expect(nota?.props.placeholder).toBe('Nuovo appunto, premi Invio')
+  expect(todo?.props.placeholder).toBe('Nuova cosa da fare, premi Invio')
+  await ui.unmount()
+})
