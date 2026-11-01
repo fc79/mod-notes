@@ -237,7 +237,7 @@ export const register: Register = on => {
             placeholder={placeholder}
             rows={FIELD_ROWS}
             value={isNote ? draft.note : draft.todo}
-            submitLabel=""
+            submitLabel="+"
             onInput={value =>
               void update($, drafts, d => (isNote ? { ...d, note: value } : { ...d, todo: value }))
             }
