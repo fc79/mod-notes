@@ -1,0 +1,6 @@
+{
+  "name": "appunti-progetto",
+  "version": "0.1.0",
+  "description": "Pannello laterale con appunti e lista to do, salvati per ogni progetto",
+  "types": "./types/index.d.ts"
+}
