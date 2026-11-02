@@ -23,14 +23,25 @@ const PANE = {
 
 // Quello che il motore farebbe sotto la mod: nessuna superficie reale.
 function engine(on: On, stored: Record<string, unknown> = {}, notPlaced?: string) {
+  const panes = new Set<string>()
   mock.store(on, stored)
   mock.clock(on, { now: Date.UTC(2026, 10, 1, 10, 30) })
   on('session.root', () => ({ value: ROOT }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
-  on('ui.open', () =>
-    notPlaced ? { value: { isPlaced: false, reason: notPlaced } } : { value: { isPlaced: true } },
-  )
+  on('ui.open', (_, e) => {
+    if (notPlaced) return { value: { isPlaced: false, reason: notPlaced } }
+    panes.add(e.id)
+    return { value: { isPlaced: true } }
+  })
+  on('ui.close', (_, e) => {
+    panes.delete(e.id)
+    return { value: undefined }
+  })
+  on('ui.panes', () => ({
+    value: [...panes].map(id => ({ id, title: id, isShown: true, isFocused: false, isPlaced: true })),
+  }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
+  return panes
 }
 
 for (const surface of ['terminal', 'desktop'] as const) {
@@ -171,5 +182,33 @@ test('ogni sezione è un riquadro, to do sopra, campo sotto la lista', async ($,
   expect(await ui.find({ key: 'annulla' })).toBeDefined()
   await ui.press({ key: 'annulla' })
   expect((await ui.findAll({ type: 'Button' })).some(x => /sonda/.test(x.text))).toBe(true)
+  await ui.unmount()
+})
+
+const CMD = { args: '', ...FROM_PHONE }
+
+test('/notes nasconde e riapre il pannello; nascosto resta nascosto alla sessione dopo', async ($, on) => {
+  const stored: Record<string, unknown> = {}
+  const panes = engine(on, stored)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  expect(panes.has('appunti')).toBe(true)
+
+  const hide = await $.command.run({ command: 'notes', ...CMD })
+  expect(hide.text).toContain('nascosto')
+  expect(panes.has('appunti')).toBe(false)
+
+  // Con il pannello nascosto /todo salva senza riaprirlo.
+  await $.command.run({ command: 'todo', ...CMD, args: 'Provare il filtro' })
+  expect(panes.has('appunti')).toBe(false)
+
+  // Nuova sessione: non si riapre da solo.
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  expect(panes.has('appunti')).toBe(false)
+
+  const show = await $.command.run({ command: 'notes', ...CMD })
+  expect(show.text).toBe('Pannello notes aperto.')
+  expect(panes.has('appunti')).toBe(true)
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.findAll({ type: 'Button' })).some(b => /filtro/.test(b.text))).toBe(true)
   await ui.unmount()
 })

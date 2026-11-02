@@ -120,6 +120,18 @@ async function undo($: EngineInterface) {
   await update($, removed, () => null)
 }
 
+// "Nascosto" vale per tutti i progetti e sopravvive alle sessioni: chi chiude
+// il pannello non se lo vede riaprire da solo alla sessione successiva.
+const HIDDEN_KEY = 'hidden'
+
+async function isHidden($: EngineInterface) {
+  return (await $.store.get(HIDDEN_KEY)) === true
+}
+
+async function isOpen($: EngineInterface) {
+  return (await $.ui.panes()).some(p => p.id === PANE)
+}
+
 async function openPane($: EngineInterface, focus: boolean) {
   const root = await read($, project)
   const title = root ? `Notes · ${folderName(root)}` : 'Notes'
@@ -143,7 +155,7 @@ export const register: Register = on => {
     try {
       await $.command.register({
         name: 'notes',
-        description: 'Apre il pannello con appunti e to do del progetto',
+        description: 'Mostra o nasconde il pannello con appunti e to do del progetto',
       })
     } catch (err) {
       $.ui.log(`notes: comando non registrato (${String(err)})`)
@@ -167,14 +179,21 @@ export const register: Register = on => {
       $.ui.log(`notes: comando non registrato (${String(err)})`)
     }
 
-    void openPane($, false)
+    if (!(await isHidden($))) void openPane($, false)
 
     return next(e)
   })
 
+  // /notes mostra o nasconde il pannello; la mod resta caricata e /nota e /todo
+  // continuano a salvare anche col pannello nascosto.
   on('command.run', { command: 'notes' }, async $ => {
+    if (await isOpen($)) {
+      await $.ui.close({ id: PANE })
+      return { text: 'Pannello notes nascosto. Riaprilo con /notes.' }
+    }
+    await $.store.set(HIDDEN_KEY, false)
     const opened = await openPane($, true)
-    if (opened.isPlaced) return { text: 'Pannello appunti aperto.' }
+    if (opened.isPlaced) return { text: 'Pannello notes aperto.' }
 
     // Dove il pannello non può essere mostrato, appunti e to do vanno in chat.
     const b = await read($, board)
@@ -185,9 +204,16 @@ export const register: Register = on => {
     }
   })
 
+  // Chiuso con la X o con /notes: resta nascosto finché non si riapre con /notes.
+  on('ui.close', async ($, e, next) => {
+    const result = await next(e)
+    if (e.id === PANE && e.origin.kind !== 'unload') await $.store.set(HIDDEN_KEY, true)
+    return result
+  })
+
   on('command.run', { command: 'nota' }, async ($, e) => {
     if (await addNote($, e.args)) {
-      await openPane($, false)
+      if (!(await isHidden($))) await openPane($, false)
       return { text: 'Appunto salvato nel pannello.' }
     }
     await openPane($, true)
@@ -196,7 +222,7 @@ export const register: Register = on => {
 
   on('command.run', { command: 'todo' }, async ($, e) => {
     if (await addTodo($, e.args)) {
-      await openPane($, false)
+      if (!(await isHidden($))) await openPane($, false)
       return { text: 'Voce aggiunta alla lista to do.' }
     }
     await openPane($, true)
