@@ -77,13 +77,13 @@ function asText(b: Board) {
   const notes = [...b.notes].sort((x, y) => y.at - x.at)
   const open = b.todos.filter(t => !t.done).sort((x, y) => x.at - y.at)
   const done = b.todos.filter(t => t.done).sort((x, y) => x.at - y.at)
-  const lines = [`Appunti (${notes.length})`]
-  if (notes.length === 0) lines.push('  Nessun appunto.')
+  const lines = [`Notes (${notes.length})`]
+  if (notes.length === 0) lines.push('  No notes yet.')
   for (const n of notes) lines.push(`  ${when(n.at)}  ${n.text}`)
-  lines.push('', `To do (${open.length} da fare${done.length ? `, ${done.length} fatte` : ''})`)
-  if (b.todos.length === 0) lines.push('  Nessuna voce.')
+  lines.push('', `To do (${open.length} open${done.length ? `, ${done.length} done` : ''})`)
+  if (b.todos.length === 0) lines.push('  Nothing to do.')
   for (const t of [...open, ...done]) lines.push(`  ${t.done ? '☑' : '☐'} ${t.text}`)
-  lines.push('', 'Aggiungi con /nota testo e /todo testo.')
+  lines.push('', 'Add with /note text and /todo text.')
   return lines.join('\n')
 }
 
@@ -173,28 +173,28 @@ export const register: Register = on => {
     try {
       await $.command.register({
         name: 'notes',
-        description: 'Mostra o nasconde il pannello con appunti e to do del progetto',
+        description: 'Show or hide the panel with the project notes and to-do list',
       })
     } catch (err) {
-      $.ui.log(`notes: comando non registrato (${String(err)})`)
+      $.ui.log(`notes: command not registered (${String(err)})`)
     }
     try {
       await $.command.register({
-        name: 'nota',
-        description: 'Aggiunge un appunto al progetto',
-        argumentHint: '[testo]',
+        name: 'note',
+        description: 'Add a note to the project',
+        argumentHint: '[text]',
       })
     } catch (err) {
-      $.ui.log(`notes: comando non registrato (${String(err)})`)
+      $.ui.log(`notes: command not registered (${String(err)})`)
     }
     try {
       await $.command.register({
         name: 'todo',
-        description: 'Aggiunge una voce alla lista to do del progetto',
-        argumentHint: '[testo]',
+        description: 'Add an item to the project to-do list',
+        argumentHint: '[text]',
       })
     } catch (err) {
-      $.ui.log(`notes: comando non registrato (${String(err)})`)
+      $.ui.log(`notes: command not registered (${String(err)})`)
     }
 
     if (!(await isHidden($))) void openPane($, false)
@@ -207,17 +207,17 @@ export const register: Register = on => {
   on('command.run', { command: 'notes' }, async $ => {
     if (await isOpen($)) {
       await $.ui.close({ id: PANE })
-      return { text: 'Pannello notes nascosto. Riaprilo con /notes.' }
+      return { text: 'Notes panel hidden. Show it again with /notes.' }
     }
     await $.store.set(HIDDEN_KEY, false)
     const opened = await openPane($, true)
-    if (opened.isPlaced) return { text: 'Pannello notes aperto.' }
+    if (opened.isPlaced) return { text: 'Notes panel open.' }
 
     // Dove il pannello non può essere mostrato, appunti e to do vanno in chat.
     const b = await read($, board)
     return {
       text:
-        `Il pannello non può essere mostrato qui. Motivo dato da Claude Code: ${opened.reason}\n\n` +
+        `The panel cannot be shown here. Reason given by Claude Code: ${opened.reason}\n\n` +
         asText(b),
     }
   })
@@ -229,22 +229,22 @@ export const register: Register = on => {
     return result
   })
 
-  on('command.run', { command: 'nota' }, async ($, e) => {
+  on('command.run', { command: 'note' }, async ($, e) => {
     if (await addNote($, e.args)) {
       if (!(await isHidden($))) await openPane($, false)
-      return { text: 'Appunto salvato nel pannello.' }
+      return { text: 'Note saved to the panel.' }
     }
     await openPane($, true)
-    return { text: 'Scrivi l’appunto nel pannello, oppure: /nota testo' }
+    return { text: 'Type the note in the panel, or: /note text' }
   })
 
   on('command.run', { command: 'todo' }, async ($, e) => {
     if (await addTodo($, e.args)) {
       if (!(await isHidden($))) await openPane($, false)
-      return { text: 'Voce aggiunta alla lista to do.' }
+      return { text: 'Item added to the to-do list.' }
     }
     await openPane($, true)
-    return { text: 'Scrivi la voce nel pannello, oppure: /todo testo' }
+    return { text: 'Type the item in the panel, or: /todo text' }
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -267,7 +267,7 @@ export const register: Register = on => {
         : last.notes.length > 0
           ? 'note'
           : null
-    const undoButton = <Button key="annulla" label="Annulla" onPress={() => undo($)} />
+    const undoButton = <Button key="annulla" label="Undo" onPress={() => undo($)} />
 
     // Il campo di testo esiste dove la superficie lo disegna (non su mobile).
     // I due campi hanno la stessa altezza e occupano tutta la larghezza.
@@ -341,7 +341,7 @@ export const register: Register = on => {
 
     const todoRows =
       b.todos.length === 0
-        ? [<Text key="vuoto-t" dimColor>Nessuna voce.</Text>]
+        ? [<Text key="vuoto-t" dimColor>Nothing to do.</Text>]
         : [...open, ...done].map(t => (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
               <Button
@@ -371,7 +371,7 @@ export const register: Register = on => {
 
     const noteRows =
       notes.length === 0
-        ? [<Text key="vuoto-n" dimColor>Nessun appunto.</Text>]
+        ? [<Text key="vuoto-n" dimColor>No notes yet.</Text>]
         : notes.map(n => (
             <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
               <Box flexDirection="column" flexShrink={1}>
@@ -394,32 +394,32 @@ export const register: Register = on => {
       <Box flexDirection="column" gap={1}>
         {section(
           'todo',
-          `To do · ${open.length} da fare`,
+          `To do · ${open.length} open`,
           [
             undoIn === 'todo' ? undoButton : null,
             done.length > 0 ? (
               <Button
                 key="elimina-completati"
                 plain
-                label="Elimina completati"
+                label="Clear completed"
                 onPress={() => remove($, { notes: [], todos: done })}
               />
             ) : null,
           ],
           todoRows,
-          field('nuovo-todo', 'Nuova cosa da fare, premi Invio'),
+          field('nuovo-todo', 'New to-do, press Enter'),
         )}
 
         {section(
           'note',
-          `Appunti · ${notes.length}`,
+          `Notes · ${notes.length}`,
           [undoIn === 'note' ? undoButton : null],
           noteRows,
-          field('nuova-nota', 'Nuovo appunto, premi Invio'),
+          field('nuova-nota', 'New note, press Enter'),
         )}
 
         {e.surface === 'mobile' ? (
-          <Text dimColor>Dal telefono aggiungi con /nota testo e /todo testo.</Text>
+          <Text dimColor>From your phone, add with /note text and /todo text.</Text>
         ) : null}
       </Box>
     )

@@ -50,11 +50,11 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await $.session.start({ cwd: ROOT, surface, isInteractive: true })
     const ui = await $.ui.mount({ ...PANE, surface })
 
-    expect((await ui.find({ type: 'Text', text: /Nessun appunto/ }))?.text).toBe('Nessun appunto.')
+    expect((await ui.find({ type: 'Text', text: /No notes yet/ }))?.text).toBe('No notes yet.')
 
     await ui.input({ key: 'nuova-nota', text: 'Il PID oscilla con onda al traverso' })
     expect(await ui.find({ type: 'Text', text: /oscilla/ })).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /^Appunti ·/ }))?.text).toBe('Appunti · 1')
+    expect((await ui.find({ type: 'Text', text: /^Notes ·/ }))?.text).toBe('Notes · 1')
 
     await ui.input({ key: 'nuovo-todo', text: 'Tarare il guadagno' })
     const row = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
@@ -64,7 +64,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     const ticked = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
     expect(ticked?.text).toContain('☑')
     expect(await ui.find({ key: 'elimina-completati' })).toBeDefined()
-    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 0 da fare')
+    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 0 open')
 
     const del = (await ui.findAll({ type: 'Button' })).find(b => b.key?.startsWith('del-n-'))
     await ui.press({ key: del?.key ?? '' })
@@ -94,7 +94,7 @@ test('quello salvato riappare in una nuova sessione, su ogni superficie', async 
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /Vela nuova/ })).toBeDefined()
     expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(true)
-    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 1 da fare')
+    expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 1 open')
     await ui.unmount()
   }
 })
@@ -103,18 +103,18 @@ test('su mobile niente campo di testo: si aggiunge con /nota e /todo', async ($,
   engine(on)
   await $.session.start({ cwd: ROOT, surface: 'mobile', isInteractive: true })
 
-  const nota = await $.command.run({ command: 'nota', args: 'Controllare la pompa', ...FROM_PHONE })
-  expect(nota.text).toBe('Appunto salvato nel pannello.')
+  const nota = await $.command.run({ command: 'note', args: 'Controllare la pompa', ...FROM_PHONE })
+  expect(nota.text).toBe('Note saved to the panel.')
   const todo = await $.command.run({ command: 'todo', args: 'Cambiare il fusibile', ...FROM_PHONE })
-  expect(todo.text).toBe('Voce aggiunta alla lista to do.')
-  const vuoto = await $.command.run({ command: 'nota', args: '   ', ...FROM_PHONE })
-  expect(vuoto.text).toContain('/nota testo')
+  expect(todo.text).toBe('Item added to the to-do list.')
+  const vuoto = await $.command.run({ command: 'note', args: '   ', ...FROM_PHONE })
+  expect(vuoto.text).toContain('/note text')
 
   const ui = await $.ui.mount({ ...PANE, surface: 'mobile' })
   expect(await ui.find({ type: 'Input' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /pompa/ })).toBeDefined()
   expect((await ui.findAll({ type: 'Button' })).some(b => /fusibile/.test(b.text))).toBe(true)
-  expect(await ui.find({ type: 'Text', text: /Dal telefono/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /From your phone/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -123,8 +123,8 @@ test('un salvataggio rovinato non blocca il pannello', async ($, on) => {
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect((await ui.find({ type: 'Text', text: /Nessun appunto/ }))?.text).toBe('Nessun appunto.')
-  expect((await ui.find({ type: 'Text', text: /Nessuna voce/ }))?.text).toBe('Nessuna voce.')
+  expect((await ui.find({ type: 'Text', text: /No notes yet/ }))?.text).toBe('No notes yet.')
+  expect((await ui.find({ type: 'Text', text: /Nothing to do/ }))?.text).toBe('Nothing to do.')
   await ui.unmount()
 })
 
@@ -156,8 +156,8 @@ test('i due campi hanno la stessa altezza e dicono di premere Invio', async ($, 
   const todo = await ui.find({ key: 'nuovo-todo' })
   expect(nota?.props.rows).toBe(3)
   expect(todo?.props.rows).toBe(nota?.props.rows)
-  expect(nota?.props.placeholder).toBe('Nuovo appunto, premi Invio')
-  expect(todo?.props.placeholder).toBe('Nuova cosa da fare, premi Invio')
+  expect(nota?.props.placeholder).toBe('New note, press Enter')
+  expect(todo?.props.placeholder).toBe('New to-do, press Enter')
   await ui.unmount()
 })
 
@@ -170,7 +170,7 @@ test('ogni sezione è un riquadro, to do sopra, campo sotto la lista', async ($,
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   const titles = (await ui.findAll({ type: 'Text' })).map(t => t.text)
   expect(titles.findIndex(t => t.startsWith('To do'))).toBeLessThan(
-    titles.findIndex(t => t.startsWith('Appunti')),
+    titles.findIndex(t => t.startsWith('Notes')),
   )
   const boxes = (await ui.findAll({ type: 'Box' })).filter(x => x.props.borderStyle === 'round')
   expect(boxes.length).toBe(2)
@@ -194,7 +194,7 @@ test('/notes nasconde e riapre il pannello; nascosto resta nascosto alla session
   expect(panes.has('appunti')).toBe(true)
 
   const hide = await $.command.run({ command: 'notes', ...CMD })
-  expect(hide.text).toContain('nascosto')
+  expect(hide.text).toContain('hidden')
   expect(panes.has('appunti')).toBe(false)
 
   // Con il pannello nascosto /todo salva senza riaprirlo.
@@ -206,7 +206,7 @@ test('/notes nasconde e riapre il pannello; nascosto resta nascosto alla session
   expect(panes.has('appunti')).toBe(false)
 
   const show = await $.command.run({ command: 'notes', ...CMD })
-  expect(show.text).toBe('Pannello notes aperto.')
+  expect(show.text).toBe('Notes panel open.')
   expect(panes.has('appunti')).toBe(true)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.findAll({ type: 'Button' })).some(b => /filtro/.test(b.text))).toBe(true)

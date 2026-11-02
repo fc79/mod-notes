@@ -2,15 +2,13 @@
 
 A Claude Code mod that adds a side panel with **notes** and a **to-do list** for the project you are working on. Notes and to-dos are saved per project folder, on your computer, and come back when you open a new session in the same folder.
 
-The panel's interface is in Italian ("Appunti" = notes, "To do" = to-do list).
-
 ## Features
 
-- **To do**: type in the field and press Enter (or **+**) to add an item. Click an item to tick it; done items move to the bottom. **Elimina completati** ("delete completed") removes all done items at once.
-- **Appunti** (notes): type in the field and press Enter (or **+**). Each note shows its date and time, newest first.
-- **✕** deletes an item; **Annulla** ("undo") brings back the last deletion. It appears in the title row of the section the deletion came from.
+- **To do**: type in the field and press Enter (or **+**) to add an item. Click an item to tick it; done items move to the bottom. **Clear completed** removes all done items at once.
+- **Notes**: type in the field and press Enter (or **+**). Each note shows its date and time, newest first.
+- **✕** deletes an item; **Undo** brings back the last deletion. It appears in the title row of the section the deletion came from.
 - **Collapse and expand**: click the triangle next to a section title to collapse it (▸, only the title stays) or expand it (▾). The choice is saved.
-- **Hide and show**: `/notes` hides or shows the panel; the panel's ✕ also hides it. A hidden panel stays hidden in later sessions until you run `/notes` again. The mod stays loaded: `/nota` and `/todo` keep saving while the panel is hidden.
+- **Hide and show**: `/notes` hides or shows the panel; the panel's ✕ also hides it. A hidden panel stays hidden in later sessions until you run `/notes` again. The mod stays loaded: `/note` and `/todo` keep saving while the panel is hidden.
 - Where the panel cannot be shown (for example a session with no surface), `/notes` prints the notes and to-dos as text in the conversation.
 
 ## Commands
@@ -18,10 +16,10 @@ The panel's interface is in Italian ("Appunti" = notes, "To do" = to-do list).
 | Command | What it does |
 | --- | --- |
 | `/notes` | Shows or hides the panel |
-| `/nota text` | Adds a note |
+| `/note text` | Adds a note |
 | `/todo text` | Adds a to-do item |
 
-On the mobile app, which has no text fields in panels, add items with `/nota` and `/todo`.
+On the mobile app, which has no text fields in panels, add items with `/note` and `/todo`.
 
 ## Install
 

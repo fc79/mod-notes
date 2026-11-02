@@ -1,6 +1,6 @@
 {
   "name": "notes",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "Side panel with project notes and a to-do list, saved per project",
   "types": "./types/index.d.ts"
 }
