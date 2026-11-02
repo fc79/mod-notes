@@ -1,31 +1,58 @@
 # notes
 
-Una mod per Claude Code che aggiunge un pannello laterale con gli **appunti** e la **lista to do** del progetto su cui stai lavorando. Appunti e lista sono salvati per ogni cartella di progetto, sul tuo computer, e si ricaricano quando riapri una sessione nella stessa cartella.
+A Claude Code mod that adds a side panel with **notes** and a **to-do list** for the project you are working on. Notes and to-dos are saved per project folder, on your computer, and come back when you open a new session in the same folder.
 
-## Cosa fa
+The panel's interface is in Italian ("Appunti" = notes, "To do" = to-do list).
 
-- **Appunti**: scrivi nel campo e premi Invio o **aggiungi**; ogni appunto ha data e ora, i più recenti in alto.
-- **To do**: aggiungi una voce con Invio o **aggiungi**, la spunti con un clic, le voci fatte vanno in fondo; "Elimina completati" le rimuove tutte insieme.
-- **✕** elimina una voce; **Annulla** recupera l'ultima eliminazione.
-- Comandi: `/notes` mostra o nasconde il pannello, `/nota testo` aggiunge un appunto, `/todo testo` aggiunge una voce. Sull'app mobile, che non ha campi di testo, si usano i comandi.
-- Dove il pannello non può essere mostrato, `/notes` riporta appunti e to do come testo nella conversazione.
-- Clicca sul triangolino accanto al titolo di un riquadro (To do o Appunti) per compattarlo (▸, resta solo il titolo) o estenderlo (▾). La scelta resta salvata.
-- Se nascondi il pannello (con `/notes` o con la X), resta nascosto anche nelle sessioni successive finché non lo riapri con `/notes`. La mod resta caricata: `/nota` e `/todo` continuano a salvare.
+## Features
 
-## Installazione
+- **To do**: type in the field and press Enter (or **+**) to add an item. Click an item to tick it; done items move to the bottom. **Elimina completati** ("delete completed") removes all done items at once.
+- **Appunti** (notes): type in the field and press Enter (or **+**). Each note shows its date and time, newest first.
+- **✕** deletes an item; **Annulla** ("undo") brings back the last deletion. It appears in the title row of the section the deletion came from.
+- **Collapse and expand**: click the triangle next to a section title to collapse it (▸, only the title stays) or expand it (▾). The choice is saved.
+- **Hide and show**: `/notes` hides or shows the panel; the panel's ✕ also hides it. A hidden panel stays hidden in later sessions until you run `/notes` again. The mod stays loaded: `/nota` and `/todo` keep saving while the panel is hidden.
+- Where the panel cannot be shown (for example a session with no surface), `/notes` prints the notes and to-dos as text in the conversation.
 
-Al prompt di una sessione nel terminale:
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `/notes` | Shows or hides the panel |
+| `/nota text` | Adds a note |
+| `/todo text` | Adds a to-do item |
+
+On the mobile app, which has no text fields in panels, add items with `/nota` and `/todo`.
+
+## Install
+
+At the prompt of a terminal session:
 
 ```
 /plugin install notes --marketplace fc79/mod-notes
 ```
 
-Da una shell:
+From a shell:
 
 ```
 claude plugin install notes --marketplace fc79/mod-notes
 ```
 
-Poi rispondi `y` per aggiungere il marketplace e scegli l'ambito (utente).
+Answer `y` to add the marketplace and pick the scope (user).
 
-Nell'app desktop, dove `/plugin` non è disponibile: premi **+** accanto alla casella del prompt, poi **Plugins**, **Add marketplace** con `fc79/mod-notes`, poi **Add plugin**.
+In the desktop app, where `/plugin` is not available: press **+** next to the prompt box, then **Plugins**, **Add marketplace** with `fc79/mod-notes`, then **Add plugin**.
+
+## Update
+
+```
+claude plugin update notes
+```
+
+Then start a new session.
+
+## Where data is stored
+
+In Claude Code's per-plugin store on your computer (`~/.claude/plugins/store/`), one entry per project folder. Nothing is sent anywhere else.
+
+## Notes on the look
+
+The section boxes use the same border colour as the desktop app's own cards in the dark theme (`#222222`). The margin between the panel edge and the boxes is set by the app and cannot be changed by a mod.
