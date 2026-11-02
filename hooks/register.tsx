@@ -311,9 +311,18 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column" borderStyle="round" borderColor="#222222" paddingX={2} gap={1}>
           <Box flexDirection="row" justifyContent="space-between" gap={1}>
-            <Button key={`sezione-${which}`} plain onPress={() => toggleSection($, which)}>
-              {`${title} ${isFolded ? '▸' : '▾'}`}
-            </Button>
+            {/* Il titolo è testo semplice, così parte dallo stesso punto dei titoli
+                dell'app; il triangolino accanto compatta o estende il riquadro. */}
+            <Box flexDirection="row">
+              <Text>{title}</Text>
+              <Button
+                key={`sezione-${which}`}
+                plain
+                dimColor
+                label={isFolded ? '▸' : '▾'}
+                onPress={() => toggleSection($, which)}
+              />
+            </Box>
             {isFolded ? null : (
               <Box flexDirection="row" gap={2}>
                 {actions}
@@ -379,8 +388,9 @@ export const register: Register = on => {
             </Box>
           ))
 
+    // Margine destro ridotto di una colonna, come la colonna dei riquadri dell'app.
     return (
-      <Box flexDirection="column" gap={1}>
+      <Box flexDirection="column" gap={1} marginRight={-1}>
         {section(
           'todo',
           `To do · ${open.length} da fare`,

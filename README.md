@@ -9,7 +9,7 @@ Una mod per Claude Code che aggiunge un pannello laterale con gli **appunti** e 
 - **✕** elimina una voce; **Annulla** recupera l'ultima eliminazione.
 - Comandi: `/notes` mostra o nasconde il pannello, `/nota testo` aggiunge un appunto, `/todo testo` aggiunge una voce. Sull'app mobile, che non ha campi di testo, si usano i comandi.
 - Dove il pannello non può essere mostrato, `/notes` riporta appunti e to do come testo nella conversazione.
-- Clicca sul titolo di un riquadro (To do o Appunti) per compattarlo (▸, resta solo il titolo) o estenderlo (▾). La scelta resta salvata.
+- Clicca sul triangolino accanto al titolo di un riquadro (To do o Appunti) per compattarlo (▸, resta solo il titolo) o estenderlo (▾). La scelta resta salvata.
 - Se nascondi il pannello (con `/notes` o con la X), resta nascosto anche nelle sessioni successive finché non lo riapri con `/notes`. La mod resta caricata: `/nota` e `/todo` continuano a salvare.
 
 ## Installazione
