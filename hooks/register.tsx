@@ -388,9 +388,10 @@ export const register: Register = on => {
             </Box>
           ))
 
-    // Margine destro ridotto di una colonna, come la colonna dei riquadri dell'app.
+    // Il margine intorno ai riquadri lo decide l'app (il pannello taglia
+    // quello che esce): un margine negativo qui fa sparire il bordo destro.
     return (
-      <Box flexDirection="column" gap={1} marginRight={-1}>
+      <Box flexDirection="column" gap={1}>
         {section(
           'todo',
           `To do · ${open.length} da fare`,
