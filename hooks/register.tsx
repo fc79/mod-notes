@@ -259,7 +259,7 @@ export const register: Register = on => {
       body: (JSX.Element | null)[],
       input: JSX.Element | null,
     ) => (
-      <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={2} gap={1}>
+      <Box flexDirection="column" borderStyle="round" borderColor="#222222" paddingX={2} gap={1}>
         <Box flexDirection="row" justifyContent="space-between" gap={1}>
           <Text>{title}</Text>
           <Box flexDirection="row" gap={2}>
