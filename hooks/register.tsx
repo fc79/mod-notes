@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Board, Drafts, Note, Removed, Todo } from '../types'
+import type { Board, Collapsed, Drafts, Note, Removed, Todo } from '../types'
 
 const PANE = 'appunti'
 const FIELD_ROWS = 3
@@ -18,6 +18,22 @@ const drafts = atom({ plugin: 'notes', key: 'drafts' } as const, {
   note: '',
   todo: '',
 } as Drafts)
+
+// Quali riquadri sono compattati: vale per tutti i progetti e resta tra le sessioni.
+const OPEN_BOTH: Collapsed = { todo: false, note: false }
+const collapsed = atom({ plugin: 'notes', key: 'collapsed' } as const, OPEN_BOTH)
+const COLLAPSED_KEY = 'collapsed'
+
+function toCollapsed(raw: unknown): Collapsed {
+  if (!raw || typeof raw !== 'object') return OPEN_BOTH
+  const c = raw as { todo?: unknown; note?: unknown }
+  return { todo: c.todo === true, note: c.note === true }
+}
+
+async function toggleSection($: EngineInterface, which: keyof Collapsed) {
+  const next = await update($, collapsed, c => ({ ...c, [which]: !c[which] }))
+  await $.store.set(COLLAPSED_KEY, next)
+}
 
 const storeKey = (root: string) => `board:${root}`
 const folderName = (root: string) => root.split('/').filter(Boolean).pop() ?? root
@@ -147,6 +163,8 @@ export const register: Register = on => {
       root = ''
     }
     await update($, project, () => root)
+    const folded = await $.store.get(COLLAPSED_KEY)
+    await update($, collapsed, () => toCollapsed(folded))
     if (root) {
       const stored = await $.store.get(storeKey(root))
       await update($, board, () => toBoard(stored))
@@ -234,6 +252,7 @@ export const register: Register = on => {
     const b = await read($, board)
     const last = await read($, removed)
     const draft = await read($, drafts)
+    const fold = await read($, collapsed)
 
     const notes = [...b.notes].sort((x, y) => y.at - x.at)
     const open = b.todos.filter(t => !t.done).sort((x, y) => x.at - y.at)
@@ -279,25 +298,37 @@ export const register: Register = on => {
     }
 
     // Ogni sezione è un riquadro: titolo con i comandi a destra, lista, campo.
+    // Ogni sezione è un riquadro come quelli dell'app: il titolo con il
+    // triangolino la compatta (resta solo il titolo) o la estende.
     const section = (
+      which: keyof Collapsed,
       title: string,
       actions: (JSX.Element | null)[],
       body: (JSX.Element | null)[],
       input: JSX.Element | null,
-    ) => (
-      <Box flexDirection="column" borderStyle="round" borderColor="#222222" paddingX={2} gap={1}>
-        <Box flexDirection="row" justifyContent="space-between" gap={1}>
-          <Text>{title}</Text>
-          <Box flexDirection="row" gap={2}>
-            {actions}
+    ) => {
+      const isFolded = fold[which]
+      return (
+        <Box flexDirection="column" borderStyle="round" borderColor="#222222" paddingX={2} gap={1}>
+          <Box flexDirection="row" justifyContent="space-between" gap={1}>
+            <Button key={`sezione-${which}`} plain onPress={() => toggleSection($, which)}>
+              {`${title} ${isFolded ? '▸' : '▾'}`}
+            </Button>
+            {isFolded ? null : (
+              <Box flexDirection="row" gap={2}>
+                {actions}
+              </Box>
+            )}
           </Box>
+          {isFolded ? null : (
+            <Box flexDirection="column" gap={1}>
+              {body}
+            </Box>
+          )}
+          {isFolded ? null : input}
         </Box>
-        <Box flexDirection="column" gap={1}>
-          {body}
-        </Box>
-        {input}
-      </Box>
-    )
+      )
+    }
 
     const todoRows =
       b.todos.length === 0
@@ -351,6 +382,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" gap={1}>
         {section(
+          'todo',
           `To do · ${open.length} da fare`,
           [
             undoIn === 'todo' ? undoButton : null,
@@ -368,6 +400,7 @@ export const register: Register = on => {
         )}
 
         {section(
+          'note',
           `Appunti · ${notes.length}`,
           [undoIn === 'note' ? undoButton : null],
           noteRows,

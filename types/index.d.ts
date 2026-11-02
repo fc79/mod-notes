@@ -3,6 +3,7 @@ export type Todo = { id: string; text: string; done: boolean; at: number }
 export type Board = { notes: Note[]; todos: Todo[] }
 export type Removed = { notes: Note[]; todos: Todo[] }
 export type Drafts = { note: string; todo: string }
+export type Collapsed = { todo: boolean; note: boolean }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -11,6 +12,7 @@ declare module 'claude-code' {
       project: string
       removed: Removed | null
       drafts: Drafts
+      collapsed: Collapsed
     }
   }
 }
