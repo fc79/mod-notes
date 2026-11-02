@@ -259,9 +259,9 @@ export const register: Register = on => {
       body: (JSX.Element | null)[],
       input: JSX.Element | null,
     ) => (
-      <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1} gap={1}>
+      <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={2} gap={1}>
         <Box flexDirection="row" justifyContent="space-between" gap={1}>
-          <Text bold>{title}</Text>
+          <Text>{title}</Text>
           <Box flexDirection="row" gap={2}>
             {actions}
           </Box>
