@@ -154,6 +154,23 @@ async function openPane($: EngineInterface, focus: boolean) {
   return $.ui.open(focus ? { id: PANE, title, focus: true } : { id: PANE, title })
 }
 
+// Vero se l'albero disegna qualcosa: né vuoto, né solo contenitori senza figli.
+// Ciò che sta sotto il pannello può essere nulla, e il motore non lo garantisce.
+function drawsSomething(tree: unknown): boolean {
+  if (typeof tree === 'string') return tree.length > 0
+  if (typeof tree === 'number') return true
+  if (Array.isArray(tree)) return tree.some(drawsSomething)
+  if (!tree || typeof tree !== 'object') return false
+  const node = tree as { type?: unknown; children?: unknown; props?: { children?: unknown } }
+  if (typeof node.type !== 'string') return false
+  // Box e Text valgono per ciò che contengono (i figli possono stare anche in props);
+  // ogni altro elemento (Button, Input...) disegna.
+  if (node.type === 'Box' || node.type === 'Text') {
+    return drawsSomething(node.children) || drawsSomething(node.props?.children)
+  }
+  return true
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     let root = ''
@@ -247,7 +264,7 @@ export const register: Register = on => {
     return { text: 'Type the item in the panel, or: /todo text' }
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e, next) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const b = await read($, board)
     const last = await read($, removed)
@@ -388,6 +405,16 @@ export const register: Register = on => {
             </Box>
           ))
 
+    // Altre mod possono aggiungere riquadri in fondo al pannello: quello che
+    // disegnano sotto di noi va dopo i nostri. Se sotto non c'è nulla, o fallisce,
+    // il pannello resta com'è.
+    let below: unknown = null
+    try {
+      below = await next(e)
+    } catch {
+      below = null
+    }
+
     // Il margine intorno ai riquadri lo decide l'app (il pannello taglia
     // quello che esce): un margine negativo qui fa sparire il bordo destro.
     return (
@@ -417,6 +444,8 @@ export const register: Register = on => {
           noteRows,
           field('nuova-nota', 'New note, press Enter'),
         )}
+
+        {drawsSomething(below) ? (below as JSX.Element) : null}
 
         {e.surface === 'mobile' ? (
           <Text dimColor>From your phone, add with /note text and /todo text.</Text>

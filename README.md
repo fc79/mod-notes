@@ -47,6 +47,10 @@ claude plugin update notes
 
 Then start a new session.
 
+## Other mods can add sections at the bottom of the Notes panel
+
+Since version 0.7.0 the panel asks what is drawn beneath it and, if something is, shows it after the To do and Notes sections. A mod does this with a `ui.render` hook on `{ component: 'Pane', requestId: 'appunti' }`. Which hook runs first depends on install order, so it should work both ways: when what it receives (`await next(e)`) draws nothing, it returns its own sections (Notes, running outermost, appends them); otherwise it wraps what it receives. A failure beneath never breaks the panel. With nothing beneath, the panel is exactly as before.
+
 ## Where data is stored
 
 In Claude Code's per-plugin store on your computer (`~/.claude/plugins/store/`), one entry per project folder. Nothing is sent anywhere else.

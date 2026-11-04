@@ -185,6 +185,9 @@ test('ogni sezione è un riquadro, to do sopra, campo sotto la lista', async ($,
   await ui.unmount()
 })
 
+// I Box del pannello di sempre (contenitore, riquadri, righe), contati sul disegno senza nulla sotto.
+const BOXES = 13
+
 const CMD = { args: '', ...FROM_PHONE }
 
 test('/notes nasconde e riapre il pannello; nascosto resta nascosto alla sessione dopo', async ($, on) => {
@@ -239,5 +242,66 @@ test('i riquadri si compattano e si estendono, e restano così nella sessione do
   expect((await ui.find({ key: 'sezione-todo' }))?.text).toBe('▸')
   await ui.press({ key: 'sezione-todo' })
   expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(true)
+  await ui.unmount()
+})
+
+test('senza nulla sotto il pannello è quello di sempre: nessun elemento in più', async ($, on) => {
+  engine(on)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+  expect(texts).toEqual(['To do · 0 open', 'Nothing to do.', 'Notes · 0', 'No notes yet.'])
+  expect((await ui.findAll({ type: 'Box' })).length).toBe(BOXES)
+  await ui.unmount()
+})
+
+test('quello che un\'altra mod disegna sotto va dopo To do e Notes', async ($, on) => {
+  engine(on)
+  on('ui.render', { component: 'Pane', requestId: 'appunti' }, ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box>
+        <Text>Sezione di un'altra mod</Text>
+      </Box>
+    )
+  })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+  expect(texts).toEqual([
+    'To do · 0 open',
+    'Nothing to do.',
+    'Notes · 0',
+    'No notes yet.',
+    "Sezione di un'altra mod",
+  ])
+  await ui.unmount()
+})
+
+test('se sotto c\'è un albero che non disegna nulla, il pannello non cambia', async ($, on) => {
+  engine(on)
+  on('ui.render', { component: 'Pane', requestId: 'appunti' }, ($, e) => {
+    const { Box } = $.ui.resolve(e)
+    return <Box />
+  })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.findAll({ type: 'Box' })).length).toBe(BOXES)
+  await ui.unmount()
+})
+
+test('se quello che sta sotto fallisce, notes si disegna lo stesso', async ($, on) => {
+  engine(on)
+  on('ui.render', { component: 'Pane', requestId: 'appunti' }, () => {
+    throw new Error('rotto')
+  })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+  expect(texts).toEqual(['To do · 0 open', 'Nothing to do.', 'Notes · 0', 'No notes yet.'])
   await ui.unmount()
 })
