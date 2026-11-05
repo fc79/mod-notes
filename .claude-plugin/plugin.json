@@ -2,5 +2,7 @@
   "name": "notes",
   "version": "0.7.0",
   "description": "Side panel with project notes and a to-do list, saved per project",
+  "author": { "name": "fc79" },
+  "license": "MIT",
   "types": "./types/index.d.ts"
 }

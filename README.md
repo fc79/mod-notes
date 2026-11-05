@@ -58,3 +58,7 @@ In Claude Code's per-plugin store on your computer (`~/.claude/plugins/store/`),
 ## Notes on the look
 
 The section boxes use the same border colour as the desktop app's own cards in the dark theme (`#222222`). The margin between the panel edge and the boxes is set by the app and cannot be changed by a mod.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
