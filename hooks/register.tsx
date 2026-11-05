@@ -361,21 +361,24 @@ export const register: Register = on => {
         ? [<Text key="vuoto-t" dimColor>Nothing to do.</Text>]
         : [...open, ...done].map(t => (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
-              <Button
-                key={`spunta-${t.id}`}
-                plain
-                onPress={() =>
-                  change($, bb => ({
-                    ...bb,
-                    todos: bb.todos.map(x => (x.id === t.id ? { ...x, done: !x.done } : x)),
-                  }))
-                }
-              >
-                {t.done ? '☑ ' : '☐ '}
-                <Text strikethrough={t.done} dimColor={t.done}>
+              {/* Solo la casella è un pulsante: un pulsante sta su una riga sola e
+                  taglierebbe i to do lunghi, il testo accanto invece va a capo. */}
+              <Box flexDirection="row" flexShrink={1} gap={1}>
+                <Button
+                  key={`spunta-${t.id}`}
+                  plain
+                  label={t.done ? '☑' : '☐'}
+                  onPress={() =>
+                    change($, bb => ({
+                      ...bb,
+                      todos: bb.todos.map(x => (x.id === t.id ? { ...x, done: !x.done } : x)),
+                    }))
+                  }
+                />
+                <Text wrap="wrap" strikethrough={t.done} dimColor={t.done}>
                   {t.text}
                 </Text>
-              </Button>
+              </Box>
               <Button
                 key={`del-t-${t.id}`}
                 plain

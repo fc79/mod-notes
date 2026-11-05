@@ -57,12 +57,12 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect((await ui.find({ type: 'Text', text: /^Notes ·/ }))?.text).toBe('Notes · 1')
 
     await ui.input({ key: 'nuovo-todo', text: 'Tarare il guadagno' })
-    const row = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
-    expect(row?.text).toContain('☐')
+    expect((await ui.findAll({ type: 'Text' })).some(b => /Tarare/.test(b.text))).toBe(true)
+    const box = (await ui.findAll({ type: 'Button' })).find(b => b.key?.startsWith('spunta-'))
+    expect(box?.text).toBe('☐')
 
-    await ui.press({ key: row?.key ?? '' })
-    const ticked = (await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))
-    expect(ticked?.text).toContain('☑')
+    await ui.press({ key: box?.key ?? '' })
+    expect((await ui.find({ key: box?.key ?? '' }))?.text).toBe('☑')
     expect(await ui.find({ key: 'elimina-completati' })).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 0 open')
 
@@ -75,7 +75,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     expect(await ui.find({ key: 'annulla' })).toBeUndefined()
 
     await ui.press({ key: 'elimina-completati' })
-    expect((await ui.findAll({ type: 'Button' })).find(b => /Tarare/.test(b.text))).toBeUndefined()
+    expect((await ui.findAll({ type: 'Text' })).find(b => /Tarare/.test(b.text))).toBeUndefined()
 
     await ui.unmount()
   })
@@ -93,7 +93,7 @@ test('quello salvato riappare in una nuova sessione, su ogni superficie', async 
   for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect(await ui.find({ type: 'Text', text: /Vela nuova/ })).toBeDefined()
-    expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(true)
+    expect((await ui.findAll({ type: 'Text' })).some(b => /sonda/.test(b.text))).toBe(true)
     expect((await ui.find({ type: 'Text', text: /^To do ·/ }))?.text).toBe('To do · 1 open')
     await ui.unmount()
   }
@@ -113,7 +113,7 @@ test('su mobile niente campo di testo: si aggiunge con /nota e /todo', async ($,
   const ui = await $.ui.mount({ ...PANE, surface: 'mobile' })
   expect(await ui.find({ type: 'Input' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /pompa/ })).toBeDefined()
-  expect((await ui.findAll({ type: 'Button' })).some(b => /fusibile/.test(b.text))).toBe(true)
+  expect((await ui.findAll({ type: 'Text' })).some(b => /fusibile/.test(b.text))).toBe(true)
   expect(await ui.find({ type: 'Text', text: /From your phone/ })).toBeDefined()
   await ui.unmount()
 })
@@ -181,7 +181,7 @@ test('ogni sezione è un riquadro, to do sopra, campo sotto la lista', async ($,
   await ui.press({ key: del?.key ?? '' })
   expect(await ui.find({ key: 'annulla' })).toBeDefined()
   await ui.press({ key: 'annulla' })
-  expect((await ui.findAll({ type: 'Button' })).some(x => /sonda/.test(x.text))).toBe(true)
+  expect((await ui.findAll({ type: 'Text' })).some(x => /sonda/.test(x.text))).toBe(true)
   await ui.unmount()
 })
 
@@ -212,7 +212,7 @@ test('/notes nasconde e riapre il pannello; nascosto resta nascosto alla session
   expect(show.text).toBe('Notes panel open.')
   expect(panes.has('appunti')).toBe(true)
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect((await ui.findAll({ type: 'Button' })).some(b => /filtro/.test(b.text))).toBe(true)
+  expect((await ui.findAll({ type: 'Text' })).some(b => /filtro/.test(b.text))).toBe(true)
   await ui.unmount()
 })
 
@@ -229,7 +229,7 @@ test('i riquadri si compattano e si estendono, e restano così nella sessione do
 
   await ui.press({ key: 'sezione-todo' })
   expect((await ui.find({ key: 'sezione-todo' }))?.text).toBe('▸')
-  expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(false)
+  expect((await ui.findAll({ type: 'Text' })).some(b => /sonda/.test(b.text))).toBe(false)
   expect(await ui.find({ key: 'nuovo-todo' })).toBeUndefined()
   expect(await ui.find({ key: 'elimina-completati' })).toBeUndefined()
   // L'altro riquadro resta esteso.
@@ -241,7 +241,7 @@ test('i riquadri si compattano e si estendono, e restano così nella sessione do
   ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ key: 'sezione-todo' }))?.text).toBe('▸')
   await ui.press({ key: 'sezione-todo' })
-  expect((await ui.findAll({ type: 'Button' })).some(b => /sonda/.test(b.text))).toBe(true)
+  expect((await ui.findAll({ type: 'Text' })).some(b => /sonda/.test(b.text))).toBe(true)
   await ui.unmount()
 })
 
@@ -303,5 +303,17 @@ test('se quello che sta sotto fallisce, notes si disegna lo stesso', async ($, o
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
   expect(texts).toEqual(['To do · 0 open', 'Nothing to do.', 'Notes · 0', 'No notes yet.'])
+  await ui.unmount()
+})
+
+test('un to do lungo resta intero e va a capo, la casella è a parte', async ($, on) => {
+  const lungo =
+    'Rifare la taratura del sensore di vento dopo aver cambiato il supporto in testa d\'albero e controllare i cavi'
+  engine(on, { [`board:${ROOT}`]: { notes: [], todos: [{ id: 'b', text: lungo, done: false, at: 2 }] } })
+  await $.session.start({ cwd: ROOT, surface: 'terminal', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  const testo = (await ui.findAll({ type: 'Text' })).find(t => t.text === lungo)
+  expect(testo).toBeDefined()
+  expect((await ui.find({ key: 'spunta-b' }))?.text).toBe('☐')
   await ui.unmount()
 })
