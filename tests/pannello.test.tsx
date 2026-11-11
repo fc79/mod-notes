@@ -317,3 +317,69 @@ test('un to do lungo resta intero e va a capo, la casella è a parte', async ($,
   expect((await ui.find({ key: 'spunta-b' }))?.text).toBe('☐')
   await ui.unmount()
 })
+
+test('to do e note si modificano con la matita; Invio salva, la data resta', async ($, on) => {
+  engine(on, {
+    [`board:${ROOT}`]: {
+      notes: [{ id: 'a', text: 'Vela nuova', at: 1 }],
+      todos: [{ id: 'b', text: 'Comprare la sonda', done: false, at: 2 }],
+    },
+  })
+  for (const surface of ['terminal', 'desktop'] as const) {
+    await $.session.start({ cwd: ROOT, surface, isInteractive: true })
+    const ui = await $.ui.mount({ ...PANE, surface })
+    const dataPrima = (await ui.findAll({ type: 'Text' })).map(t => t.text).find(t => /^\d\d\/\d\d /.test(t))
+
+    await ui.press({ key: 'modifica-todo-b' })
+    expect(await ui.find({ key: 'del-t-b' })).toBeUndefined()
+    expect(await ui.find({ key: 'modifica-todo-b' })).toBeUndefined()
+    await ui.input({ key: 'modifica-b', text: 'Comprare la sonda di profondità' })
+    expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'Comprare la sonda di profondità')).toBe(true)
+    expect(await ui.find({ key: 'modifica-b' })).toBeUndefined()
+    expect(await ui.find({ key: 'del-t-b' })).toBeDefined()
+
+    await ui.press({ key: 'modifica-note-a' })
+    await ui.input({ key: 'modifica-a', text: 'Vela nuova: ordinata' })
+    expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'Vela nuova: ordinata')).toBe(true)
+    const dataDopo = (await ui.findAll({ type: 'Text' })).map(t => t.text).find(t => /^\d\d\/\d\d /.test(t))
+    expect(dataDopo).toBe(dataPrima)
+    await ui.unmount()
+
+    // Salvato: riappare così in una nuova sessione.
+    await $.session.start({ cwd: ROOT, surface, isInteractive: true })
+    const ui2 = await $.ui.mount({ ...PANE, surface })
+    expect((await ui2.findAll({ type: 'Text' })).some(t => t.text === 'Vela nuova: ordinata')).toBe(true)
+    await ui2.unmount()
+  }
+})
+
+test('Cancel e campo svuotato lasciano il testo di prima', async ($, on) => {
+  engine(on, { [`board:${ROOT}`]: { notes: [], todos: [{ id: 'b', text: 'Comprare la sonda', done: false, at: 2 }] } })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+
+  await ui.press({ key: 'modifica-todo-b' })
+  await ui.press({ key: 'annulla-modifica' })
+  expect(await ui.find({ key: 'modifica-b' })).toBeUndefined()
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'Comprare la sonda')).toBe(true)
+
+  await ui.press({ key: 'modifica-todo-b' })
+  await ui.input({ key: 'modifica-b', text: '   ' })
+  expect(await ui.find({ key: 'modifica-b' })).toBeUndefined()
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text === 'Comprare la sonda')).toBe(true)
+  await ui.unmount()
+})
+
+test('sul telefono niente matita', async ($, on) => {
+  engine(on, {
+    [`board:${ROOT}`]: {
+      notes: [{ id: 'a', text: 'Vela nuova', at: 1 }],
+      todos: [{ id: 'b', text: 'Comprare la sonda', done: false, at: 2 }],
+    },
+  })
+  await $.session.start({ cwd: ROOT, surface: 'mobile', isInteractive: true })
+  const ui = await $.ui.mount({ ...PANE, surface: 'mobile' })
+  expect((await ui.findAll({ type: 'Button' })).some(b => b.text === '✎')).toBe(false)
+  expect(await ui.find({ key: 'del-t-b' })).toBeDefined()
+  await ui.unmount()
+})

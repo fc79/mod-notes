@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Board, Collapsed, Drafts, Note, Removed, Todo } from '../types'
+import type { Board, Collapsed, Drafts, Editing, Note, Removed, Todo } from '../types'
 
 const PANE = 'appunti'
 const FIELD_ROWS = 3
@@ -18,6 +18,8 @@ const drafts = atom({ plugin: 'notes', key: 'drafts' } as const, {
   note: '',
   todo: '',
 } as Drafts)
+// Quale voce si sta modificando: una sola alla volta, non salvata su disco.
+const editing = atom({ plugin: 'notes', key: 'editing' } as const, null as Editing | null)
 
 // Quali riquadri sono compattati: vale per tutti i progetti e resta tra le sessioni.
 const OPEN_BOTH: Collapsed = { todo: false, note: false }
@@ -114,6 +116,20 @@ async function addTodo($: EngineInterface, text: string) {
   const { id, at } = await newId($)
   await change($, b => ({ ...b, todos: [...b.todos, { id, text: clean, done: false, at }] }))
   return true
+}
+
+// Salva il testo modificato; un campo svuotato lascia il testo di prima.
+// La data resta quella originale.
+async function saveEdit($: EngineInterface, what: Editing, text: string) {
+  const clean = text.trim()
+  if (clean) {
+    await change($, b =>
+      what.kind === 'todo'
+        ? { ...b, todos: b.todos.map(t => (t.id === what.id ? { ...t, text: clean } : t)) }
+        : { ...b, notes: b.notes.map(n => (n.id === what.id ? { ...n, text: clean } : n)) },
+    )
+  }
+  await update($, editing, () => null)
 }
 
 async function remove($: EngineInterface, what: Removed) {
@@ -270,6 +286,7 @@ export const register: Register = on => {
     const last = await read($, removed)
     const draft = await read($, drafts)
     const fold = await read($, collapsed)
+    const edit = await read($, editing)
 
     const notes = [...b.notes].sort((x, y) => y.at - x.at)
     const open = b.todos.filter(t => !t.done).sort((x, y) => x.at - y.at)
@@ -313,6 +330,41 @@ export const register: Register = on => {
         </Box>
       )
     }
+
+    // Mentre si modifica, la riga diventa un campo già compilato: Invio salva,
+    // Cancel rinuncia. ✎ e ✕ spariscono, così non si elimina per sbaglio.
+    const isEditing = (kind: Editing['kind'], id: string) =>
+      edit !== null && edit.kind === kind && edit.id === id
+    const editRow = (what: Editing) => {
+      const { Input } = $.ui.resolve(e)
+      return (
+        <Box key={`modifica-riga-${what.id}`} flexDirection="column" width="100%">
+          <Input
+            key={`modifica-${what.id}`}
+            rows={FIELD_ROWS}
+            value={what.text}
+            submitLabel="save"
+            autoFocus
+            onInput={value => void update($, editing, ed => (ed ? { ...ed, text: value } : ed))}
+            onSubmit={value => saveEdit($, what, value)}
+          />
+          <Box flexDirection="row" justifyContent="flex-end">
+            <Button key="annulla-modifica" label="Cancel" onPress={() => update($, editing, () => null)} />
+          </Box>
+        </Box>
+      )
+    }
+    // La matita apre la modifica; sul telefono non c'è il campo, quindi niente matita.
+    const editButton = (kind: Editing['kind'], id: string, text: string) =>
+      e.surface === 'mobile' ? null : (
+        <Button
+          key={`modifica-${kind}-${id}`}
+          plain
+          dimColor
+          label="✎"
+          onPress={() => update($, editing, () => ({ kind, id, text }))}
+        />
+      )
 
     // Ogni sezione è un riquadro: titolo con i comandi a destra, lista, campo.
     // Ogni sezione è un riquadro come quelli dell'app: il titolo con il
@@ -359,7 +411,8 @@ export const register: Register = on => {
     const todoRows =
       b.todos.length === 0
         ? [<Text key="vuoto-t" dimColor>Nothing to do.</Text>]
-        : [...open, ...done].map(t => (
+        : [...open, ...done].map(t =>
+            edit && isEditing('todo', t.id) ? editRow(edit) : (
             <Box key={`t-${t.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
               {/* Solo la casella è un pulsante: un pulsante sta su una riga sola e
                   taglierebbe i to do lunghi, il testo accanto invece va a capo. */}
@@ -379,32 +432,39 @@ export const register: Register = on => {
                   {t.text}
                 </Text>
               </Box>
-              <Button
-                key={`del-t-${t.id}`}
-                plain
-                dimColor
-                label="✕"
-                onPress={() => remove($, { notes: [], todos: [t] })}
-              />
+              <Box flexDirection="row" gap={2}>
+                {editButton('todo', t.id, t.text)}
+                <Button
+                  key={`del-t-${t.id}`}
+                  plain
+                  dimColor
+                  label="✕"
+                  onPress={() => remove($, { notes: [], todos: [t] })}
+                />
+              </Box>
             </Box>
           ))
 
     const noteRows =
       notes.length === 0
         ? [<Text key="vuoto-n" dimColor>No notes yet.</Text>]
-        : notes.map(n => (
+        : notes.map(n =>
+            edit && isEditing('note', n.id) ? editRow(edit) : (
             <Box key={`n-${n.id}`} flexDirection="row" justifyContent="space-between" gap={1}>
               <Box flexDirection="column" flexShrink={1}>
                 <Text dimColor>{when(n.at)}</Text>
                 <Text wrap="wrap">{n.text}</Text>
               </Box>
-              <Button
-                key={`del-n-${n.id}`}
-                plain
-                dimColor
-                label="✕"
-                onPress={() => remove($, { notes: [n], todos: [] })}
-              />
+              <Box flexDirection="row" gap={2}>
+                {editButton('note', n.id, n.text)}
+                <Button
+                  key={`del-n-${n.id}`}
+                  plain
+                  dimColor
+                  label="✕"
+                  onPress={() => remove($, { notes: [n], todos: [] })}
+                />
+              </Box>
             </Box>
           ))
 
